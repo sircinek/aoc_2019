@@ -23,7 +23,7 @@ defmodule Aoc2019.Day5 do
 
   def result do
     IO.puts("Day1:")
-    IO.puts("Part1: #{a()}")l
+    IO.puts("Part1: #{a()}")
     IO.puts("Part2: #{b()}")
   end
 
