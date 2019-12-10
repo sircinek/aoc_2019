@@ -1,6 +1,6 @@
-defmodule Aoc2019.Day5 do
+defmodule Aoc2019.Day7 do
   @moduledoc """
-  Day 5 of Advent of Code 2019.
+  Day 7 of Advent of Code 2019.
   """
 
   @doc """
@@ -10,7 +10,8 @@ defmodule Aoc2019.Day5 do
   """
   def a(input \\ input()) do
     input
-    |> IntCodeComputer.add_input(1)
+    |> Map.put_new(:output, [])
+    |> Map.put_new(:input, 1)
     |> IntCodeComputer.run(:output)
     |> Enum.reject(& &1 == 0)
     |> Enum.at(0)

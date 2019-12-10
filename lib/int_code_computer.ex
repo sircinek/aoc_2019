@@ -7,6 +7,8 @@ defmodule IntCodeComputer do
      end
   end
 
+  def add_input(code, input_value), do: Map.put(code, :input, input_value)
+
   defp halt(code, :output), do: {:done, output(code)}
   defp halt(%{0 => ret}, :zero), do: {:done, ret}
   defp halt(code, :code), do: {:done, code}
@@ -20,11 +22,7 @@ defmodule IntCodeComputer do
       [opcode = 4 | modes] ->
         mode = modes(modes)
         result = operation(opcode, code, mode)
-        # IO.puts "Ret #{inspect code.index}, next cmd #{inspect code[code.index]}"
-        # IO.puts "Output: #{result}"
-        ret = %{add_output(code, result) | index: index(code) + offset(opcode)}
-        # IO.puts "Ret #{inspect ret.index}, next cmd #{inspect ret[ret.index]}"
-        ret
+        %{add_output(code, result) | index: index(code) + offset(opcode)}
 
       [opcode = 5 | modes] ->
         jump_if(& &1 != 0, modes, code, opcode)
@@ -33,14 +31,11 @@ defmodule IntCodeComputer do
         jump_if(& &1 == 0, modes, code, opcode)
 
       [opcode | modes] ->
-        # IO.puts "opcode #{opcode}, modes #{inspect modes}"
         modes = modes(modes)
         result = operation(opcode, code, modes)
         offset = offset(opcode)
         position = position(opcode, code, mode(:position, modes))
         code = update_code(offset, position, result, code)
-        # IO.puts "Output: #{result}"
-        # IO.puts "Ret #{inspect code.index}, next cmd #{inspect code[code.index]}"
         code
     end
   end
@@ -68,9 +63,7 @@ defmodule IntCodeComputer do
   end
 
   defp update_code(index_offset, position, value, code) do
-    index = index(code)
-    # IO.puts "Update code at #{position}, put #{value}, old index #{index}"
-    %{Map.put(code, position, value) | index: index + index_offset}
+    %{Map.put(code, position, value) | index: index(code) + index_offset}
   end
 
   defp position(opcode, code, @position) when opcode in [1,2,7,8] do

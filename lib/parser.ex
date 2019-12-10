@@ -21,6 +21,7 @@ defmodule Parser do
     |> Enum.reduce({%{}, 0}, fn e, {a, i} -> {Map.put(a, i, e), i+1} end)
     |> elem(0)
     |> Map.put(:index, index)
+    |> Map.put(:output, [])
   end
 
   def read_file(path) when is_binary(path) do
