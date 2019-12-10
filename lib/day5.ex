@@ -9,7 +9,12 @@ defmodule Aoc2019.Day5 do
   ## Examples
   """
   def a(input \\ input()) do
-
+    input
+    |> Map.put_new(:output, [])
+    |> Map.put_new(:input, 1)
+    |> IntCodeComputer.run(:output)
+    |> Enum.reject(& &1 == 0)
+    |> Enum.at(0)
   end
 
   @doc """
@@ -28,6 +33,6 @@ defmodule Aoc2019.Day5 do
   end
 
   defp input do
-    Parser.file_to_int_list("inputs/day5.txt")
+    Parser.file_one_line_commas_to_index_map("inputs/day5.txt")
   end
 end

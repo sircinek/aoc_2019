@@ -12,7 +12,7 @@ defmodule Aoc2019.Day2 do
   """
   # def a(res) when is_integer(res), do: res
   def a(input \\ input()) do
-    IntCodeComputer.run(input)
+    IntCodeComputer.run(input, :zero)
   end
 
   @doc """
@@ -25,7 +25,7 @@ defmodule Aoc2019.Day2 do
     pairs = for noun <- 0..99, verb <- 0..99, do: {noun, verb}
     Enum.reduce_while(pairs, 0,
       fn {noun, verb}, a ->
-        case IntCodeComputer.run(%{input| 1 => noun, 2 => verb}) do
+        case IntCodeComputer.run(%{input| 1 => noun, 2 => verb}, :zero) do
           19690720 -> {:halt, 100 * noun + verb}
           _ -> {:cont, a}
         end
