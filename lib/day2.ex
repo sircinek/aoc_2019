@@ -7,10 +7,9 @@ defmodule Aoc2019.Day2 do
   First problem.
 
   ## Examples
-    iex> Aoc2019.Day2(Parser.line_commas_to_index_map("1,9,10,3,2,3,11,0,99,30,40,50", 0))
+    iex> Aoc2019.Day2.a(Parser.line_commas_to_index_map("1,9,10,3,2,3,11,0,99,30,40,50", 0))
     3500
   """
-  # def a(res) when is_integer(res), do: res
   def a(input \\ input()) do
     IntCodeComputer.run(input, :zero)
   end

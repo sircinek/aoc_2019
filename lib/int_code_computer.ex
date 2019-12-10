@@ -1,10 +1,10 @@
 defmodule IntCodeComputer do
 
   def run(code, output) do
-     case action(code, output) do
-       {:done, result} -> result
-       code -> run(code, output)
-     end
+    case action(code, output) do
+      {:done, result} -> result
+      code -> run(code, output)
+    end
   end
 
   def add_input(code, input_value), do: Map.put(code, :input, input_value)

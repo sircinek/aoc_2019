@@ -5,36 +5,28 @@ defmodule Amplifier do
     GenServer.start_link(__MODULE__, [code, phase])
   end
 
-  def register_amplifier(pid, amplifier) do
-    GenServer.handle_cast(pid, {:register_amplifier, amplifier})
-  end
-
-  def input_signal(pid, input) do
-    send(pid, {:input, input})
+  def calculate_output(pid, input) do
+    GenServer.call(pid, {:input, input})
   end
 
   def init([code, phase]) do
-    {:noreply, %{code: code, phase: phase, amplifier: nil}, {:continue, phase}}
+    {:ok, %{code: code}, {:continue, {:phase, phase}}}
   end
 
-  def handle_continue({:continue, phase}, data) do
-    run_code(phase, data)
-    {:noreply, data}
+  def handle_continue({:phase, phase}, data) do
+    code = run_code(phase, :code, data)
+    {:noreply, %{data| code: code}}
   end
 
-  def handle_cast({:register_amplifier, amplifier}, data) do
-    {:noreply, %{data| amplifier: amplifier}}
+  def handle_call({:input, input}, _, data) do
+    [result] = run_code(input, :output, data)
+    {:reply, result, data}
   end
 
-  def handle_info({:input, input}, data = %{code: code}) do
-    run_code(input, data)
-  end
-
-  def run_code(input, %{code: code, amplifier: _amp}) do
+  def run_code(input, mode, %{code: code}) do
+    IO.puts "Run input #{input}, old input #{inspect Map.get(code, :input)}"
     code
     |> IntCodeComputer.add_input(input)
-    |> IntCodeComputer.run(:output)
+    |> IntCodeComputer.run(mode)
   end
-
-
 end
