@@ -7,7 +7,7 @@ defmodule IntCodeComputer do
      end
   end
 
-  defp halt(%{output: o}, :output), do: {:done, o}
+  defp halt(code, :output), do: {:done, output(code)}
   defp halt(%{0 => ret}, :zero), do: {:done, ret}
   defp halt(code, :code), do: {:done, code}
 
@@ -26,21 +26,46 @@ defmodule IntCodeComputer do
         # IO.puts "Ret #{inspect ret.index}, next cmd #{inspect ret[ret.index]}"
         ret
 
-      [opcode | opcode2_modes] ->
-        # IO.puts "opcode #{opcode}, modes #{inspect opcode2_modes}"
-        modes = modes(opcode2_modes)
+      [opcode = 5 | modes] ->
+        jump_if(& &1 != 0, modes, code, opcode)
+
+      [opcode = 6 | modes] ->
+        jump_if(& &1 == 0, modes, code, opcode)
+
+      [opcode | modes] ->
+        # IO.puts "opcode #{opcode}, modes #{inspect modes}"
+        modes = modes(modes)
         result = operation(opcode, code, modes)
         offset = offset(opcode)
         position = position(opcode, code, mode(:position, modes))
-        update_code(offset, position, result, code)
+        code = update_code(offset, position, result, code)
+        # IO.puts "Output: #{result}"
+        # IO.puts "Ret #{inspect code.index}, next cmd #{inspect code[code.index]}"
+        code
     end
   end
 
-  defp operation(_opcode = 1, code, modes), do: element(mode(:element1, modes), 1, code) + element(mode(:element2, modes), 2, code)
-  defp operation(_opcode = 2, code, modes), do: element(mode(:element1, modes), 1, code) * element(mode(:element2, modes), 2, code)
+  defp operation(_opcode = 1, code, modes), do: element_1(modes, code) + element_2(modes, code)
+  defp operation(_opcode = 2, code, modes), do: element_1(modes, code) * element_2(modes, code)
   defp operation(_opcode = 3, code,_modes), do: input(code)
-  defp operation(_opcode = 4, code, mode) when mode in [[@position], []], do: element(@position, 1, code)
-  defp operation(_opcode = 4, code, [@immediate]), do: element(@immediate, 1, code)
+  defp operation(_opcode = 4, code, modes), do: element_1(modes, code)
+  defp operation(_opcode = 7, code, modes), do: less_or_equal(& &1 < &2, modes, code)
+  defp operation(_opcode = 8, code, modes), do: less_or_equal(& &1 == &2, modes, code)
+
+  defp less_or_equal(check, modes, code) do
+    if check.(element_1(modes, code), element_2(modes, code)), do: 1, else: 0
+  end
+
+  defp jump_if(checker, modes, code, opcode) do
+    modes = modes(modes)
+    param1 = element_1(modes, code)
+    param2 = element_2(modes, code)
+    if checker.(param1) do
+      %{code | index: param2}
+    else
+      %{code | index: index(code) + offset(opcode)}
+    end
+  end
 
   defp update_code(index_offset, position, value, code) do
     index = index(code)
@@ -48,11 +73,11 @@ defmodule IntCodeComputer do
     %{Map.put(code, position, value) | index: index + index_offset}
   end
 
-  defp position(opcode, code, @position) when opcode in [1,2] do
+  defp position(opcode, code, @position) when opcode in [1,2,7,8] do
     code[index(code) + 3]
   end
 
-  defp position(opcode, code, @immediate) when opcode in [1,2] do
+  defp position(opcode, code, @immediate) when opcode in [1,2,7,8] do
     index(code) + 3
   end
 
@@ -64,7 +89,8 @@ defmodule IntCodeComputer do
     index(code) + 1
   end
 
-  defp offset(opcode) when opcode in [1,2], do: 4
+  defp offset(opcode) when opcode in [1,2,7,8], do: 4
+  defp offset(opcode) when opcode in [5,6], do: 3
   defp offset(opcode) when opcode in [3,4], do: 2
   defp modes([]), do: []
   defp modes([_ | modes]), do: modes
@@ -73,6 +99,14 @@ defmodule IntCodeComputer do
   defp mode(:element1, [mode | _]), do: mode
   defp mode(:element2, [_, mode |_ ]), do: mode
   defp mode(_, _), do: @position
+
+  defp element_1(modes, code) do
+    element(mode(:element1, modes), 1, code)
+  end
+
+  defp element_2(modes, code) do
+    element(mode(:element2, modes), 2, code)
+  end
 
   defp element(@position, offset, code) do
     code[code[index(code) + offset]]

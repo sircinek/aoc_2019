@@ -23,7 +23,12 @@ defmodule Aoc2019.Day5 do
   ## Examples
   """
   def b(input \\ input()) do
-
+    input
+    |> Map.put_new(:output, [])
+    |> Map.put_new(:input, 5)
+    |> IntCodeComputer.run(:output)
+    |> Enum.reject(& &1 == 0)
+    |> Enum.at(0)
   end
 
   def result do
