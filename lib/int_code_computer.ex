@@ -1,12 +1,20 @@
 defmodule IntCodeComputer do
 
-  def run(code, output) do
-    try do
-      case action(code, output) do
-        {:done, result} -> result
-        code -> run(code, output)
+  def run_to_halt(code, output_type) do
+    case action(code, output_type) do
+      {:done, result} -> result
+      {:output, code} -> run_to_halt(code, output_type)
+      {:wait_for_input, code} ->
+      code -> run_to_halt(code, output_type)
       end
-    catch caught -> caught
+    catch
+      wait = {:wait_for_input, _code} -> wait
+    end
+  end
+
+  def run_to_output(code) do
+    case action(code, :output) do
+
     end
   end
 
@@ -31,10 +39,20 @@ defmodule IntCodeComputer do
     case opcode(code) do
       [9, 9 | _ ] ->
          halt(code, output)
+      [opcode = 3 | modes] ->
+        case input(code) do
+          {:ok, {input_value, inputs}} ->
+            code = update_input(code, inputs)
+            modes = modes(modes)
+            position = position(opcode, code, mode(:position, modes))
+            update_code(offset, position, result, code)
+          wait = {:wait_for_input, code}
+        end
+
       [opcode = 4 | modes] ->
         mode = modes(modes)
         result = operation(opcode, code, mode)
-        %{add_output(code, result) | index: index(code) + offset(opcode)}
+        {:output, %{code | output: result, index: index(code) + offset(opcode)}}
 
       [opcode = 5 | modes] ->
         jump_if(& &1 != 0, modes, code, opcode)
@@ -53,8 +71,6 @@ defmodule IntCodeComputer do
 
   defp operation(_opcode = 1, code, modes), do: element_1(modes, code) + element_2(modes, code)
   defp operation(_opcode = 2, code, modes), do: element_1(modes, code) * element_2(modes, code)
-  defp operation(_opcode = 3, code,_modes), do: input(code)
-  defp operation(_opcode = 4, code, modes), do: element_1(modes, code)
   defp operation(_opcode = 7, code, modes), do: less_or_equal(& &1 < &2, modes, code)
   defp operation(_opcode = 8, code, modes), do: less_or_equal(& &1 == &2, modes, code)
 
@@ -73,11 +89,7 @@ defmodule IntCodeComputer do
     end
   end
 
-  defp update_code(index_offset, position, value, code, _opcode = 3) do
-    %{Map.put(code, position, value) | input: :queue.drop(code.input), index: index(code) + index_offset}
-  end
-
-  defp update_code(index_offset, position, value, code, _opcode) do
+  defp update_code(index_offset, position, value, code) do
     %{Map.put(code, position, value) | index: index(code) + index_offset}
   end
 
@@ -129,13 +141,14 @@ defmodule IntCodeComputer do
 
   defp index(%{index: i}), do: i
 
-  defp input(code = %{input: i}) do
+  def input(code = %{input: i}) do
     case :queue.out(i) do
-      {{:value, v}, _queue} -> v
-      {:empty, _queue} -> throw({:break, code})
+      {{:value, v}, queue} -> {:ok, {v, queue}}
+      {:empty, queue} -> {:wait_for_input, queue}
     end
   end
-  defp output(%{output: o}), do: o
 
-  defp add_output(code = %{output: o}, o1), do: %{code | output: o ++ [o1]}
+  def update_input(code, input), do: %{code| input: input}
+
+  def output(%{output: o}), do: o
 end

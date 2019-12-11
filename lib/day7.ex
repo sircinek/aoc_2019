@@ -26,7 +26,6 @@ defmodule Aoc2019.Day7 do
   def b(input \\ input()) do
     _phases = 5..9
     |> combinations()
-    |>
   end
 
   def result do

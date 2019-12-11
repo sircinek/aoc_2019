@@ -11,9 +11,7 @@ defmodule Aoc2019.Day5 do
   def a(input \\ input()) do
     input
     |> IntCodeComputer.add_input(1)
-    |> IntCodeComputer.run(:output)
-    |> Enum.reject(& &1 == 0)
-    |> Enum.at(0)
+    |> IntCodeComputer.run_to_halt(:output)
   end
 
   @doc """
@@ -25,9 +23,7 @@ defmodule Aoc2019.Day5 do
     input
     |> Map.put_new(:output, [])
     |> IntCodeComputer.add_input(5)
-    |> IntCodeComputer.run(:output)
-    |> Enum.reject(& &1 == 0)
-    |> Enum.at(0)
+    |> IntCodeComputer.run_to_halt(:output)
   end
 
   def result do

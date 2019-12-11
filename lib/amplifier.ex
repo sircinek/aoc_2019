@@ -1,7 +1,7 @@
 defmodule Amplifier do
   use GenServer
 
-  def start_link(code, phase) do
+  def start_link(code) do
     GenServer.start_link(__MODULE__, [code, phase])
   end
 
@@ -10,7 +10,6 @@ defmodule Amplifier do
   end
 
   def init([code, phase]) do
-    {:ok, %{code: code}}
     {:ok, %{code: code}, {:continue, {:phase, phase}}}
   end
 
@@ -20,7 +19,7 @@ defmodule Amplifier do
   end
 
   def handle_call({:input, input}, _, data) do
-    [result] = run_code(input, :output, data)
+    result = run_code(input, :output, data)
     {:reply, result, data}
   end
 
