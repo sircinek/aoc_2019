@@ -1,13 +1,25 @@
 defmodule IntCodeComputer do
 
   def run(code, output) do
-    case action(code, output) do
-      {:done, result} -> result
-      code -> run(code, output)
+    try do
+      case action(code, output) do
+        {:done, result} -> result
+        code -> run(code, output)
+      end
+    catch caught -> caught
     end
   end
 
-  def add_input(code, input_value), do: Map.put(code, :input, input_value)
+  def add_input(code, input_value) do
+    update_fn =
+      fn(nil) ->  {nil, :queue.in(input_value, :queue.new())}
+        queue -> {queue, :queue.in(input_value, queue)}
+      end
+
+    code
+    |> Map.get_and_update(:input, update_fn)
+    |> elem(1)
+  end
 
   defp halt(code, :output), do: {:done, output(code)}
   defp halt(%{0 => ret}, :zero), do: {:done, ret}
@@ -35,8 +47,7 @@ defmodule IntCodeComputer do
         result = operation(opcode, code, modes)
         offset = offset(opcode)
         position = position(opcode, code, mode(:position, modes))
-        code = update_code(offset, position, result, code)
-        code
+        update_code(offset, position, result, code, opcode)
     end
   end
 
@@ -62,7 +73,11 @@ defmodule IntCodeComputer do
     end
   end
 
-  defp update_code(index_offset, position, value, code) do
+  defp update_code(index_offset, position, value, code, _opcode = 3) do
+    %{Map.put(code, position, value) | input: :queue.drop(code.input), index: index(code) + index_offset}
+  end
+
+  defp update_code(index_offset, position, value, code, _opcode) do
     %{Map.put(code, position, value) | index: index(code) + index_offset}
   end
 
@@ -114,7 +129,12 @@ defmodule IntCodeComputer do
 
   defp index(%{index: i}), do: i
 
-  defp input(%{input: i}), do: i
+  defp input(code = %{input: i}) do
+    case :queue.out(i) do
+      {{:value, v}, _queue} -> v
+      {:empty, _queue} -> throw({:break, code})
+    end
+  end
   defp output(%{output: o}), do: o
 
   defp add_output(code = %{output: o}, o1), do: %{code | output: o ++ [o1]}

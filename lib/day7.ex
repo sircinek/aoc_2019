@@ -11,41 +11,11 @@ defmodule Aoc2019.Day7 do
   {{4,3,2,1,0}, 43210}
   """
   def a(input \\ input()) do
-    phases = 0..4
-    for a <- phases,
-        b <- phases,
-        c <- phases,
-        d <- phases,
-        e <- phases,
-        a != b,
-        a != c,
-        a != d,
-        a != e,
-        b != c,
-        b != d,
-        b != e,
-        c != d,
-        c != e,
-        d != e,
-      into: %{}
-    do
-      amps = 
-        for {amp, phase} <- [{:a, a},{:b, b},{:c, c}, {:d, d}, {:e, e}] do
-          {:ok, p} = Amplifier.start_link(input, phase)
-          {amp, p}
-        end
-      calculate_output = fn {a, p}, i ->
-        ret = Amplifier.calculate_output(p, i)
-        IO.puts "Amp #{inspect a}, input: #{inspect i}, output: #{inspect ret}"
-        ret
-      end
-      result = Enum.reduce(amps, 0, calculate_output)
-      ret = {{a, b, c, d, e}, result}
-      # IO.puts "Result #{inspect ret}"
-      ret
-    end
-    |> Enum.max_by(fn {_, result} -> result end)
-   
+    _phases = 0..4
+    |> combinations()
+    |> Task.async_stream(simulation(input))
+    |> Enum.max_by(fn {_, {_, result}} -> result end)
+    |> elem(1)
   end
 
   @doc """
@@ -54,18 +24,56 @@ defmodule Aoc2019.Day7 do
   ## Examples
   """
   def b(input \\ input()) do
-    input
-    |> Map.put_new(:output, [])
-    |> Map.put_new(:input, 5)
-    |> IntCodeComputer.run(:output)
-    |> Enum.reject(& &1 == 0)
-    |> Enum.at(0)
+    _phases = 5..9
+    |> combinations()
+    |>
   end
 
   def result do
     IO.puts("Day1:")
     IO.puts("Part1: #{a()}")
     IO.puts("Part2: #{b()}")
+  end
+
+  defp combinations(phases) do
+    options =
+      for a <- phases,
+          b <- phases,
+          c <- phases,
+          d <- phases,
+          e <- phases,
+          a != b,
+          a != c,
+          a != d,
+          a != e,
+          b != c,
+          b != d,
+          b != e,
+          c != d,
+          c != e,
+          d != e
+      do
+        {a,b,c,d,e}
+      end
+  end
+
+  defp simulation(input) do
+    fn(settings) ->
+      amps = initialize_amps(settings, input)
+      result = Enum.reduce(amps, 0, &calculate_output/2)
+      {settings, result}
+    end
+  end
+
+  defp calculate_output({amp, pid}, input) do
+    Amplifier.calculate_output(pid, input)
+  end
+
+  defp initialize_amps({a,b,c,d,e}, input) do
+    for {amp, phase} <- [{:a, a},{:b, b},{:c, c}, {:d, d}, {:e, e}] do
+      {:ok, p} = Amplifier.start_link(input, phase)
+      {amp, p}
+    end
   end
 
   defp input do

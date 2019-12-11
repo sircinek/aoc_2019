@@ -10,6 +10,7 @@ defmodule Amplifier do
   end
 
   def init([code, phase]) do
+    {:ok, %{code: code}}
     {:ok, %{code: code}, {:continue, {:phase, phase}}}
   end
 
@@ -24,7 +25,6 @@ defmodule Amplifier do
   end
 
   def run_code(input, mode, %{code: code}) do
-    IO.puts "Run input #{input}, old input #{inspect Map.get(code, :input)}"
     code
     |> IntCodeComputer.add_input(input)
     |> IntCodeComputer.run(mode)
