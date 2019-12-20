@@ -4,18 +4,13 @@ defmodule IntCodeComputer do
     case action(code, output_type) do
       {:done, result} -> result
       {:output, code} -> run_to_halt(code, output_type)
-      {:wait_for_input, code} ->
-      code -> run_to_halt(code, output_type)
-      end
-    catch
       wait = {:wait_for_input, _code} -> wait
+      code -> code
     end
   end
 
   def run_to_output(code) do
-    case action(code, :output) do
-
-    end
+    action(code, :output)
   end
 
   def add_input(code, input_value) do
@@ -39,15 +34,8 @@ defmodule IntCodeComputer do
     case opcode(code) do
       [9, 9 | _ ] ->
          halt(code, output)
-      [opcode = 3 | modes] ->
-        case input(code) do
-          {:ok, {input_value, inputs}} ->
-            code = update_input(code, inputs)
-            modes = modes(modes)
-            position = position(opcode, code, mode(:position, modes))
-            update_code(offset, position, result, code)
-          wait = {:wait_for_input, code}
-        end
+      [_opcode = 3 | modes] ->
+        handle_input_opcode(code, modes)
 
       [opcode = 4 | modes] ->
         mode = modes(modes)
@@ -65,7 +53,7 @@ defmodule IntCodeComputer do
         result = operation(opcode, code, modes)
         offset = offset(opcode)
         position = position(opcode, code, mode(:position, modes))
-        update_code(offset, position, result, code, opcode)
+        update_code(offset, position, result, code)
     end
   end
 
@@ -93,21 +81,14 @@ defmodule IntCodeComputer do
     %{Map.put(code, position, value) | index: index(code) + index_offset}
   end
 
-  defp position(opcode, code, @position) when opcode in [1,2,7,8] do
+  defp position(opcode, code, @position) when opcode in [1,2,7,8], do:
     code[index(code) + 3]
-  end
-
-  defp position(opcode, code, @immediate) when opcode in [1,2,7,8] do
+  defp position(opcode, code, @immediate) when opcode in [1,2,7,8], do:
     index(code) + 3
-  end
-
-  defp position(opcode, code, @position) when opcode in [3,4] do
+  defp position(opcode, code, @position) when opcode in [3,4], do:
     code[index(code) + 1]
-  end
-
-  defp position(opcode, code, @immediate) when opcode in [3,4] do
+  defp position(opcode, code, @immediate) when opcode in [3,4], do:
     index(code) + 1
-  end
 
   defp offset(opcode) when opcode in [1,2,7,8], do: 4
   defp offset(opcode) when opcode in [5,6], do: 3
@@ -120,20 +101,12 @@ defmodule IntCodeComputer do
   defp mode(:element2, [_, mode |_ ]), do: mode
   defp mode(_, _), do: @position
 
-  defp element_1(modes, code) do
-    element(mode(:element1, modes), 1, code)
-  end
+  defp element_1(modes, code), do: element(mode(:element1, modes), 1, code)
 
-  defp element_2(modes, code) do
-    element(mode(:element2, modes), 2, code)
-  end
+  defp element_2(modes, code), do: element(mode(:element2, modes), 2, code)
 
-  defp element(@position, offset, code) do
-    code[code[index(code) + offset]]
-  end
-  defp element(@immediate, offset, code) do
-    code[index(code) + offset]
-  end
+  defp element(@position, offset, code), do: code[code[index(code) + offset]]
+  defp element(@immediate, offset, code), do: code[index(code) + offset]
 
   defp opcode(code) do
     Integer.digits(code[index(code)]) |> Enum.reverse()
@@ -141,7 +114,22 @@ defmodule IntCodeComputer do
 
   defp index(%{index: i}), do: i
 
-  def input(code = %{input: i}) do
+  defp handle_input_opcode(code, modes) do
+    opcode = 3
+    case input(code) do
+      {:ok, {input_value, inputs}} ->
+        code = update_input(code, inputs)
+        modes = modes(modes)
+        position = position(opcode, code, mode(:position, modes))
+        offset = offset(opcode)
+        update_code(offset, position, input_value, code)
+
+      wait = {:wait_for_input, _code} ->
+        wait
+    end
+  end
+
+  def input(%{input: i}) do
     case :queue.out(i) do
       {{:value, v}, queue} -> {:ok, {v, queue}}
       {:empty, queue} -> {:wait_for_input, queue}
